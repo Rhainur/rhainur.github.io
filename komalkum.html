@@ -5,9 +5,12 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/mithril/3.0.0-next.11/mithril.min.js" integrity="sha512-veJyRkYTPP9HJBUEq3oqA1uBzxGA+OiiHkcgT4Nm8Ovg9dNKSxf4mxClYVCkujcxIz+reFruwp4OPsXY10U8UA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
   <script>
     const notes = ["Sa", "re", "Re", "ga", "Ga", "Ma", "Ma'", "Pa", "dha", "Dha", "ni", "Ni"]
+    const keys = ["A", "A#", "B", "B#", "C", "C#", "D", "D#", "E", "E#", "F", "F#", "G", "G#"]
     const komalPositions = [false, true, false, true, false, true, false, false, true, false, true, false]
 
     let selectedNotes = [true, false, false, false, false, false, false, true, false, false, false, false]
+    let inputFluteKey = 8
+    let outputFluteKey = null
     let recommendedStartPositions = []
     let komalsForStart = [0,0,0,0,0,0,0,0,0,0,0]
     let komalsAtZero = 0
@@ -50,17 +53,60 @@
     var kk = {
       view: function(){
         let result = null
+        console.log("Drawing")
 
         if(lowestKomals == komalsAtZero){
           result = m("p", { key: "final-result" }, "Unfortunately, no alternate start position offers a lower number of komal swar, so just begin on Sa!")
         }else{
           result = recommendedStartPositions.map(function(startPosition){
+            let calculatedOutputKey = null
+            let calculatedInputKey = null
+            if(inputFluteKey){ calculatedOutputKey = (inputFluteKey + startPosition)%12 }
+            if(outputFluteKey){
+              calculatedInputKey = (outputFluteKey - startPosition)
+              if(calculatedInputKey < 0){
+                calculatedInputKey = 12 + calculatedInputKey
+              }
+            }
+
             return m(
               "div.mb-5",
               { key: "final-result" },
-              m("span", { key: "text-1" }, "Start on "),
-              m("strong", { key: "text-2" }, notes[startPosition]),
-              m("span", { key: "text-3" }, ` and you'll have to play a total of ${komalsForStart[startPosition]} komal swar`),
+              m("div", { key: "text-1" },
+                m("span", "Start on "),
+                m("strong", notes[startPosition]),
+                m("span", ` and you'll have to play a total of ${komalsForStart[startPosition]} komal swar`)
+              ),
+              m(
+                "div",
+                { key: "flute-key" },
+                m("span", "If your flute is "),
+                m("select",
+                  {
+                    onchange: function(e){
+                      inputFluteKey = parseInt(e.target.value)
+                      outputFluteKey = null
+                    }
+                  }, keys.map(function(keyName, i){
+                  return m("option", {
+                    value: i,
+                    selected: (inputFluteKey == i || calculatedInputKey == i)
+                  }, keyName )
+                })),
+                m("span", " you will be playing in the key of "),
+                m("select",
+                  {
+                    onchange: function(e){
+                      inputFluteKey = null
+                      outputFluteKey = parseInt(e.target.value)
+                    }
+                  }, keys.map(function(keyName, i){
+                  return m("option", {
+                    value: i,
+                    selected: (outputFluteKey == i || calculatedOutputKey == i)
+                  }, keyName )
+                }))
+              ),
               m(
                 "table",
                 { class: "table mx-auto", style: "width: 300px", key: `start-at-${startPosition}` },
